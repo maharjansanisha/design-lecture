@@ -162,7 +162,7 @@ h1, h2, h3 { margin: 0; font-weight: 400; }
 .frustrations { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin-top: 56px; }
 /*fc*/.fcard {
   cursor: pointer; text-align: left; border: 1.5px solid var(--ink); background: var(--paper); border-radius: 22px;
-  padding: 26px 26px 22px; min-height: 380px; display: flex; flex-direction: column; justify-content: space-between;
+  padding: 26px 26px 22px; min-height: 300px; display: flex; flex-direction: column; justify-content: space-between;
   transition: background .25s, color .25s, transform .25s var(--ease);
 }
 .fcard:hover { transform: translateY(-4px); }
@@ -174,7 +174,7 @@ h1, h2, h3 { margin: 0; font-weight: 400; }
 .fcard.is-hit { background: var(--ink); color: var(--paper); }
 .fcard.is-hit .tally { color: #A39C8E; }
 .fcard.is-hit svg { --stroke: var(--paper); }
-.s-q .foot { position: absolute; left: 112px; right: 112px; bottom: 74px; display: flex; justify-content: space-between; align-items: center; }
+.s-q .foot { margin-top: 36px; display: flex; justify-content: space-between; align-items: center; }
 .s-q .foot .body { max-width: 980px; }
 
 /* ============================================================
