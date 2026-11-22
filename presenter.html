@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Presenter — Beyond Beautiful Interfaces</title>
+<style>
+  @font-face { font-family: "Inter Tight"; src: url("assets/fonts/inter-tight-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2"); font-weight: 500; }
+  :root { --bg:#121210; --panel:#1B1A17; --line:#34322D; --ink:#F1ECE1; --muted:#9C9587; --accent:#E2582C; --ok:#5BB98B; --warn:#E8B04A; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: "Inter Tight", system-ui, sans-serif; }
+  body { display: grid; grid-template-rows: auto 1fr; height: 100vh; overflow: hidden; }
+  header { display: flex; align-items: center; gap: 18px; padding: 12px 18px; border-bottom: 1px solid var(--line); font-family: "JetBrains Mono", monospace; font-size: 14px; }
+  header .t { font-size: 34px; letter-spacing: .02em; }
+  header .lbl { color: var(--muted); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; display: block; }
+  header .grp { display: flex; flex-direction: column; }
+  header .spacer { flex: 1; }
+  .pace { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; }
+  .pace.ok { color: var(--ok); border-color: var(--ok); }
+  .pace.behind { color: var(--warn); border-color: var(--warn); }
+  .pace.over { color: #fff; background: var(--accent); border-color: var(--accent); }
+  button { font: inherit; cursor: pointer; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; }
+  button:hover { border-color: var(--accent); }
+  main { display: grid; grid-template-columns: 1.55fr 1fr; gap: 16px; padding: 16px; min-height: 0; }
+  .left { display: grid; grid-template-rows: auto 1fr; gap: 10px; min-height: 0; }
+  .right { display: grid; grid-template-rows: auto auto 1fr; gap: 10px; min-height: 0; }
+  .frame { position: relative; aspect-ratio: 16/9; width: 100%; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: #000; }
+  .frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
+  .cap { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; display: flex; justify-content: space-between; }
+  .cap b { color: var(--ink); font-weight: 500; }
+  .notes { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; overflow: auto; font-size: 19px; line-height: 1.5; min-height: 0; }
+  .notes h4 { margin: 16px 0 4px; font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #F6B79C; font-weight: 500; }
+  .notes h4:first-child { margin-top: 0; }
+  .notes p, .notes li { margin: 0 0 8px; }
+  .notes ul { padding-left: 20px; margin: 0; }
+  .bar { height: 6px; background: var(--panel); border-radius: 6px; overflow: hidden; display: flex; gap: 2px; }
+  .bar i { display: block; height: 100%; background: #3A3832; }
+  .bar i.done { background: var(--muted); }
+  .bar i.cur { background: var(--accent); }
+  .warn { display: none; background: var(--accent); color: #fff; padding: 8px 16px; font-size: 14px; }
+  .warn.show { display: block; }
+  .fs-small .notes { font-size: 16px; } .fs-large .notes { font-size: 23px; }
+</style>
+</head>
+<body>
+<div>
+  <div class="warn" id="warn">Not connected to the slides. Open <b>index.html</b> in another window (served over http, e.g. GitHub Pages or a local server), then press P there.</div>
+  <header>
+    <div class="grp"><span class="lbl">Elapsed</span><span class="t" id="elapsed">00:00</span></div>
+    <div class="grp"><span class="lbl">On this slide</span><span class="t" id="slideTime" style="font-size:24px">00:00</span></div>
+    <div class="grp"><span class="lbl">Slide target</span><span id="target" style="font-size:18px">—</span></div>
+    <span class="pace" id="pace">Timer not started</span>
+    <div class="spacer"></div>
+    <button id="tStart">▶ Start timer</button>
+    <button id="tReset">Reset</button>
+    <button id="actT" title="Start/pause the activity timer on slide 4">Activity timer</button>
+    <button id="fsz" title="Notes text size">A±</button>
+    <button id="prev">← Prev</button>
+    <button id="next">Next →</button>
+    <div class="grp" style="text-align:right"><span class="lbl">Clock</span><span id="clock" style="font-size:18px">--:--</span></div>
+  </header>
+</div>
+<main>
+  <section class="left">
+    <div class="cap"><span>Now · <b id="nowLbl">—</b></span><span id="stepLbl"></span></div>
+    <div style="display:grid; grid-template-rows:auto auto; gap:10px; align-content:start">
+      <div class="frame"><iframe id="cur" src="index.html?preview" title="Current slide"></iframe></div>
+      <div class="bar" id="bar"></div>
+    </div>
+  </section>
+  <section class="right">
+    <div class="cap"><span>Next · <b id="nextLbl">—</b></span></div>
+    <div class="frame"><iframe id="nxt" src="index.html?preview" title="Next step"></iframe></div>
+    <div class="notes" id="notes">Waiting for slides…</div>
+  </section>
+</main>
+
+<script src="js/notes.js"></script>
+<script>
+(function () {
+  const ch = new BroadcastChannel("bbi-deck");
+  const NOTES = window.DECK_NOTES || [];
+  const cur = document.getElementById("cur"), nxt = document.getElementById("nxt");
+  const $ = id => document.getElementById(id);
+  let st = { slide: 0, step: 0 }, connected = false;
+  let ready = { cur: false, nxt: false };
+
+  // Cumulative target minutes at the END of each slide
+  const cum = []; NOTES.reduce((a, n, i) => (cum[i] = a + (n.minutes || 0)), 0);
+  const TOTAL = cum[cum.length - 1] || 30;
+
+  // Talk timer (persisted so a refresh doesn't lose it)
+  const KEY = "bbi-presenter-timer";
+  let T = JSON.parse(localStorage.getItem(KEY) || "null") || { start: 0, paused: 0, running: false, slideStart: 0 };
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(T)); } catch (e) {} }
+  function now() { return Date.now(); }
+  function elapsedMs() { return T.running ? now() - T.start : T.paused; }
+  function fmt(ms) { const s = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
+
+  $("tStart").onclick = () => {
+    if (T.running) { T.paused = elapsedMs(); T.running = false; }
+    else { T.start = now() - T.paused; T.running = true; if (!T.slideStart) T.slideStart = now(); }
+    save(); tick();
+  };
+  $("tReset").onclick = () => { T = { start: 0, paused: 0, running: false, slideStart: now() }; save(); tick(); };
+
+  function tick() {
+    const e = elapsedMs();
+    $("elapsed").textContent = fmt(e);
+    $("slideTime").textContent = fmt(T.slideStart ? now() - T.slideStart : 0);
+    $("tStart").textContent = T.running ? "❚❚ Pause timer" : (e ? "▶ Resume" : "▶ Start timer");
+    const d = new Date(); $("clock").textContent = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const pace = $("pace");
+    if (!e) { pace.className = "pace"; pace.textContent = "Timer not started"; return; }
+    const min = e / 60000;
+    const endOfSlide = cum[st.slide] || TOTAL;
+    if (min > TOTAL) { pace.className = "pace over"; pace.textContent = `Over time by ${fmt(e - TOTAL * 60000)}`; }
+    else if (min > endOfSlide + 0.5) { pace.className = "pace behind"; pace.textContent = `Behind ~${Math.round(min - endOfSlide)} min · ${fmt(TOTAL * 60000 - e)} left`; }
+    else { pace.className = "pace ok"; pace.textContent = `On track · ${fmt(TOTAL * 60000 - e)} left`; }
+  }
+  setInterval(tick, 500);
+
+  function applyFrames() {
+    try {
+      if (ready.cur && cur.contentWindow.deck) cur.contentWindow.deck.go(st.slide, st.step, { silent: true });
+      if (ready.nxt && nxt.contentWindow.deck) {
+        const n = nxt.contentWindow.deck.nextState(st.slide, st.step);
+        if (n) nxt.contentWindow.deck.go(n.slide, n.step, { silent: true });
+        $("nextLbl").textContent = n ? (n.slide === st.slide ? `Reveal ${n.step} on this slide` : `${n.slide + 1}. ${(NOTES[n.slide] || {}).title || ""}`) : "End of deck";
+      }
+    } catch (e) { /* file:// cross-origin — see README */ }
+  }
+  cur.addEventListener("load", () => { ready.cur = true; applyFrames(); });
+  nxt.addEventListener("load", () => { ready.nxt = true; applyFrames(); });
+
+  let lastSlide = -1;
+  function update() {
+    const n = NOTES[st.slide] || {};
+    $("nowLbl").textContent = `${st.slide + 1}. ${n.title || ""}`;
+    $("target").textContent = `${n.minutes || "?"} min · by ${cum[st.slide] || "?"}:00`;
+    const maxStep = (cur.contentWindow && cur.contentWindow.deck) ? cur.contentWindow.deck.maxStep[st.slide] : 0;
+    $("stepLbl").textContent = maxStep ? `Reveal ${st.step} of ${maxStep}` : "";
+    const html = window.DECK_NOTES_HTML || (cur.contentWindow && cur.contentWindow.DECK_NOTES_HTML);
+    $("notes").innerHTML = html ? html(st.slide) : "";
+    $("bar").innerHTML = NOTES.map((x, i) => `<i style="flex:${x.minutes || 1}" class="${i < st.slide ? "done" : i === st.slide ? "cur" : ""}"></i>`).join("");
+    if (st.slide !== lastSlide) { T.slideStart = now(); save(); lastSlide = st.slide; }
+    applyFrames(); tick();
+  }
+
+  ch.onmessage = (e) => {
+    const d = e.data || {};
+    if (d.type === "state") {
+      connected = true; $("warn").classList.remove("show");
+      st = { slide: d.slide, step: d.step }; update();
+    }
+  };
+  ch.postMessage({ type: "hello" });
+  setTimeout(() => { if (!connected) $("warn").classList.add("show"); }, 1500);
+
+  // Load notes renderer from the preview frame once ready
+  cur.addEventListener("load", () => { if (!window.DECK_NOTES_HTML && cur.contentWindow) { try { window.DECK_NOTES_HTML = cur.contentWindow.DECK_NOTES_HTML; } catch (e) {} } update(); });
+
+  const nav = dir => ch.postMessage({ type: "nav", dir });
+  $("prev").onclick = () => nav(-1);
+  $("next").onclick = () => nav(1);
+  $("actT").onclick = () => ch.postMessage({ type: "timer" });
+  let fs = 1; $("fsz").onclick = () => { fs = (fs + 1) % 3; document.body.className = ["fs-small", "", "fs-large"][fs]; };
+
+  document.addEventListener("keydown", (e) => {
+    const k = e.key;
+    if (["ArrowRight", "ArrowDown", "PageDown", " ", "Enter"].includes(k)) { e.preventDefault(); nav(1); }
+    else if (["ArrowLeft", "ArrowUp", "PageUp", "Backspace"].includes(k)) { e.preventDefault(); nav(-1); }
+    else if (/^[1-9]$/.test(k)) ch.postMessage({ type: "goto", slide: +k - 1, step: 0 });
+    else if (k === "t" || k === "T") ch.postMessage({ type: "timer" });
+    else if (k === "s" || k === "S") $("tStart").click();
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>
